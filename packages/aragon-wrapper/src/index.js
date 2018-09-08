@@ -528,6 +528,46 @@ export default class Aragon {
    * Calculate the transaction path for a transaction to `destination`
    * that invokes `methodName` with `params`.
    *
+   * @param  {string} from
+   * @param  {string} to
+   * @param  {string} script
+   * @return {Array<Object>} An array of Ethereum transactions that describe each step in the path
+   */
+  async getForwardPath (from, to, script) {
+    const accounts = await this.getAccounts()
+    const minGasPrice = this.web3.utils.toWei('20', 'gwei')
+
+    // TODO: No need for contract?
+    // A helper method to create a transaction that calls `forward` on a forwarder with `script`
+    const forwardMethod = new this.web3.eth.Contract(
+      require('../abi/aragon/Forwarder.json')
+    ).methods['forward']
+
+    const directTransaction = {
+      from: from,
+      to: to,
+      data: forwardMethod(script).encodeABI(),
+      gasPrice: minGasPrice
+    }
+    for (let account of accounts) {
+      const path = await this.calculateTransactionPath(
+        account,
+        from,
+        directTransaction
+      )
+
+      if (path.length > 0) {
+        return this.describeTransactionPath(path)
+      }
+    }
+
+    return []
+  }
+
+  /**
+   * Calculate the transaction path for a transaction to `destination`
+   * that invokes `methodName` with `params`.
+   *
    * @param  {string} destination
    * @param  {string} methodName
    * @param  {Array<*>} params
@@ -609,7 +649,6 @@ export default class Aragon {
    */
   async calculateTransactionPath (sender, destination, methodName, params) {
     const minGasPrice = this.web3.utils.toWei('20', 'gwei')
-
     const permissions = await this.permissions.take(1).toPromise()
     const app = await this.apps.map(
       (apps) => apps.find((app) => addressesEqual(app.proxyAddress, destination))
@@ -654,6 +693,27 @@ export default class Aragon {
       ),
       gasPrice: minGasPrice
     }
+
+    calculateDirectPath (sender, destination, directTransaction)
+
+  }
+
+  /**
+   * Calculate the transaction path for a transaction to `destination`
+   * that invokes `methodName` with `params`.
+   *
+   * @param  {string} sender
+   * @param  {string} destination
+   * @param  {Object} directTransaction
+   * @return {Array<Object>} An array of Ethereum transactions that describe each step in the path
+   */
+  async calculateDirectPath (sender, destination, directTransaction) {
+    const minGasPrice = this.web3.utils.toWei('20', 'gwei')
+    const permissions = await this.permissions.take(1).toPromise()
+    const app = await this.apps.map(
+      (apps) => apps.find((app) => addressesEqual(app.proxyAddress, destination))
+    ).take(1).toPromise()
+
 
     // If the method has no ACL requirements, we assume we
     // can perform the action directly

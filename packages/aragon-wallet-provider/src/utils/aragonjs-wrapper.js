@@ -1,3 +1,17 @@
+import { BigNumber } from 'bignumber.js'
+import Aragon, {
+  providers,
+  setupTemplates,
+  isNameUsed,
+  ensResolve,
+} from '@aragon/wrapper'
+import {
+  appOverrides,
+  sortAppsPair,
+  appLocator,
+  ipfsDefaultConf,
+} from './environment'
+
 const noop = () => {}
 
 const appSrc = (app, gateway = ipfsDefaultConf.gateway) => {
@@ -48,7 +62,7 @@ const initWrapper = async (
     provider,
     accounts = '',
     walletProvider = null,
-    ipfsConf = ipfsDefaultConf,
+    ipfsConf,
     onError = noop,
     onApps = noop,
     onForwarders = noop,
@@ -57,6 +71,7 @@ const initWrapper = async (
     onPermissions = noop,
   } = {}
 ) => {
+console.log("wrapper")
   const isDomain = /[a-z0-9]+\.eth/.test(dao)
 
   const daoAddress = isDomain

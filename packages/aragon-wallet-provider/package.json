@@ -20,6 +20,8 @@
   "author": "Jeremy Macaluso <jvluso@recoblix.com>",
   "license": "GPL-3.0",
   "dependencies": {
+    "@aragon/cli": "^4.2.1",
+    "@aragon/os": "^4.0.0-beta.1",
     "@aragon/test-helpers": "^1.0.1",
     "@aragon/wrapper": "^2.0.0-beta.42",
     "@babel/core": "^7.0.0",
@@ -29,8 +31,8 @@
     "ethereumjs-wallet": "^0.6.0",
     "ganache-core": "^2.2.1",
     "solidity-sha3": "^0.4.1",
-    "web3": "^0.18.2",
     "truffle-hdwallet-provider": "0.0.3",
+    "web3": "^0.18.2",
     "web3-provider-engine": "^14.0.5"
   },
   "devDependencies": {
