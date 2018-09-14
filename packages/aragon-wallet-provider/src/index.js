@@ -8,13 +8,8 @@ var Transaction = require('ethereumjs-tx');
 
 function AragonProvider(provider, ens, dao, forwardingAddress) {
   this.addresses = forwardingAddress;
-  this.wrapper = initAragonJS(dao, ens, {
-    accounts: provider.accounts,
-    provider: provider,
-    onTransaction: transaction => {
-      this.transactionPaths = transaction
-    }
-  })
+  this.provider = provider;
+  this.wrapper = {}
 
   const tmp_accounts = this.addresses;
   const tmp_wallets = this.wallets;
@@ -22,62 +17,42 @@ function AragonProvider(provider, ens, dao, forwardingAddress) {
   this.engine = new ProviderEngine();
   this.engine.addProvider(new HookedSubprovider({
     getAccounts: function(cb) {
-      console.log("getAccounts")
       cb(null, tmp_accounts)
     },
     getPrivateKey: function(address, cb) {
-      console.log("getPrivateKey")
       if (!tmp_wallets[address]) { return cb('Account not found'); }
-      else { cb(null, tmp_wallets[address].getPrivateKey().toString('hex')); }
+      else { cb('Aragon wallet does not use private keys'); }
     },
     signTransaction: async function(txParams, cb) {
-      console.log("signTransaction")
       var transactionPaths = await this.wrapper.getForwardPath(txParams.from, txParams.to, txParams.data)
       cb(null, transactionPaths[0]);
     }
   }));
-  if(!provider.sendAsync) provider.sendAsync = function(payload,callback){
-    // if(payload.method != 'eth_getBlockByNumber'){
-    // console.log("trying")
-    // console.log(payload)
-    // console.log(callback)
-    // console.trace()
-    //   console.log("trying")
-    //     console.log("trying")
-    //       console.log("trying")
-    //         console.log("trying")
-    //           console.log("trying")
-    //             console.log("trying")
-    //               console.log("trying")
-    //                 console.log("trying")
-    //                   console.log("trying")
-    //                     console.log("trying")
-    //                       console.log("trying")
-    //                         console.log("trying")
-    //                       }
-
-    return provider.send(payload,callback)
-  }
+  if(!provider.sendAsync) provider.sendAsync = provider.send
+  this.engine.addProvider(new FiltersSubprovider());
   this.engine.addProvider(new ProviderSubprovider(provider));
   this.engine.start(); // Required by the provider engine.
+
+
+  this.wrapper = initAragonJS(dao, ens, {
+    accounts: provider.accounts,
+    provider: this,
+    onTransaction: transaction => {
+      this.transactionPaths = transaction
+    }
+  })
 };
 
 AragonProvider.prototype.sendAsync = function() {
-  console.log("sendAsync")
-  // console.log(arguments)
-  // console.log(arguments[0].params)
-  // console.trace()
   this.engine.sendAsync.apply(this.engine, arguments);
 };
 
 AragonProvider.prototype.send = function() {
-  console.log("send")
   return this.engine.send.apply(this.engine, arguments);
 };
 
 // returns the address of the given address_index, first checking the cache
 AragonProvider.prototype.getAddress = function(idx) {
-  console.log('getting addresses', this.addresses[0], idx)
   if (!idx) { return this.addresses[0]; }
   else { return this.addresses[idx]; }
 }
@@ -85,6 +60,11 @@ AragonProvider.prototype.getAddress = function(idx) {
 // returns the addresses cache
 AragonProvider.prototype.getAddresses = function() {
   return this.addresses;
+}
+
+// returns the addresses cache
+AragonProvider.prototype.on = function(type, callback) {
+  return this.provider.on(type, callback);
 }
 
 module.exports = AragonProvider;
